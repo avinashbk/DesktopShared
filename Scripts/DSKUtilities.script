@@ -1,0 +1,155 @@
+﻿(** PUBLIC **)
+
+(**
+	Handler: 
+		DSKUtilities.maximizeWindow
+	Description: 
+		Maximized selected application in windows. 
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to maximizeWindow
+	log "Maximizing selected/active application window"
+	typetext windowsKey, upArrow
+end maximizeWindow
+
+(**
+	Handler: 
+		DSKUtilities.minimizeWindow
+	Description: 
+		Minimize all application in windows. 
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to minimizeWindow
+	log "Minimizing all application windows"
+	typetext windowsKey, "m"
+end minimizeWindow
+
+(**
+	Handler: 
+		DSKUtilities.dismissRulesOfRoad
+	Description: 
+		Checks for rules of the road and hits enter to dismiss it 
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to dismissRulesOfRoad
+	log "Checking for rules of the road message"
+	if ImageFound(5 seconds, text:"Rules of the Road", ValidCharacters:"*", SearchRectangle: DSKUtilities.scale (0, 0, 1, .25))
+		TypeText returnKey
+	end if	
+end dismissRulesOfRoad
+
+(**
+	Handler: 
+		DSKUtilities.logoutWindows
+	Description: 
+		Logouts out of windows device. Common use before disconnecting
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to logoutWindows 
+	Log "Logging off machine"
+	TypeText windowskey, "r"
+	TypeText "shutdown /l /f", returnKey
+end logoutWindows
+
+(**
+	Handler: 
+		DSKUtilities.windowsLoginCheck
+	Description: 
+		Returns true/false if user is logged into Windows by verifying start menu icon is displayed
+	Parameters: 
+		n/a
+	Returns: 
+		Boolean value - if Windows Start menu icon is displayed
+**)
+to windowsLoginCheck
+	// Check if user is logged into Windows
+	set searchArea to DSKUtilities.scale (0, .93, .05, 1) // Bottom left area for Windows Start Menu icon
+	log "Checking if user is logged into windows"
+	if ImageFound(imageName: "DSKWindows/Button_StartMenu", waitFor: 90 seconds, SearchRectangle: searchArea)
+		log "User is logged into Windows device"
+		return true
+	else
+		log "User is NOT logged into Windows device"
+		return false
+	end if
+end windowsLoginCheck
+
+(**
+	Handler: 
+		DSKUtilities.launchTask (task)
+	Description: 
+		Will launch task/applicaiton that is passed in
+	Parameters: 
+		task -- process to launch.  Can be a list if needed 
+	Returns: n/a
+**)
+to launchTask task
+	repeat with each item of task
+		log "Launching task" && it 
+		typetext windowskey,"r"  // open run window
+		wait 1 // faster to add wait then to check run window opens
+		TypeText it, ReturnKey
+	end repeat
+end launchTask
+
+(**
+	Handler: 
+		DSKUtilities.killTask (task)
+	Description: 
+		Will end all running processes for passed in task/application
+	Parameters: 
+		task -- process to kill.  Can be a list if needed
+	Returns: 
+		n/a
+**)
+to killTask task
+	repeat with each item of task
+		log "Ending task" && it
+		set killList to killList & " /IM" && it	
+	end repeat
+	typetext windowskey,"r" // open run window
+	wait 1 // faster to add wait then to check run window opens
+	TypeText "taskkill /f" & killList, ReturnKey
+end killTask
+
+(** PRIVATE **)
+
+(**
+	Handler: 
+		DSKUtilities.scale (startX, startY, endX, endY)
+	Description: 
+		Calculates search area based on device screen size and ratios/percentage passed in 
+		Example for getting top left 25% of screen: 
+         		set mySearchArea to DSKUtilities.scale (0, 0, .5, .5)
+			If screensize is 1980x1080 your searchArea returned would be (0, 0, 990, 540)
+	Parameters:
+		startX - starting X-axis ratio for screensize. (0 <= startX <= 1)
+   		startY - starting Y-axis ratio for screensize. (0 <= startY <= 1)
+    		endX - ending X-axis ratio for screensize. (startX <= endX <= 1)
+    		endY - ending Y-axis ratio for screensize. (startY <= endY <= 1)
+	Returns: 
+		searchArea - x,y coordinate list used for search rectangle area
+**)
+to scale startX, startY, endX, endY
+	if startX is a number and startY is a number and endX is a number and endY is a number 
+		set (x,y) to ConnectionInfo().ScreenSize
+		set searchArea to (x * startX, y * startY, x * endX, y * endY)
+		log "Scaled Search Area is:" && searchArea
+		return searchArea
+	else
+		throw Name:"DSKUtilities.scale", reason: "Invalid number used for calculation or invalid/empty parameters passed in"
+	end if
+	return searchArea
+end scale

@@ -1,0 +1,360 @@
+﻿(*
+	This script will contain shared handlers using Desktop browsers such as chrome or IE
+*)
+
+(** PUBLIC **)
+
+(**
+	Handler: 
+		DSKBrowser.launchChromeIncognito
+	Description: 
+		Launch Chrome in incognito mode from Windows device.
+		Assumes Chrome is installed on the Windows device.
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to launchChromeIncognito
+	If DSKUtilities.windowsLoginCheck equals true 	
+		log "Opening chrome in incognito mode."
+		DSKUtilities.killTask "chrome.exe"
+		DSKUtilities.launchTask "chrome -Incognito"	
+		If ImageFound(imageName: "DSKBrowser/Icon_Chrome_Incognito") or if ImageFound (text: "gone incognito", Wait: 30 seconds)
+			log "Chrome has been opened in Incognito mode"
+		else
+			throw Name:"DSKBrowser.launchChromeIncognito", reason: "Unable to confirm a Chrome Incognito Mode was opened"
+		end if
+	else
+		throw Name:"DSKBrowser.launchChromeIncognito", reason: "Unable to confirm user is logged into Windows device"
+	end if	
+end launchChromeIncognito
+
+(**
+	Handler: 
+		DSKBrowser.launchChromeIncognitoMaxURL (URL)
+	Description: 
+		Launch Chrome (Incognito mode), Enter URL, and maximize
+	Parameters: 
+		URL - address or url to navigate to 
+	Returns: 
+		n/a
+**)
+to launchChromeIncognitoMaxURL URL
+	DSKBrowser.launchChromeIncognito
+	log "Entering URL into chrome"
+	TypeText URL	
+	TypeText returnkey
+	DSKBrowser.maximize
+end launchChromeIncognitoMaxURL
+
+(**
+	Handler: 
+		DSKBrowser.launchIE_Private
+	Description: 
+		Launch internet explorer (IE) in private mode  from Windows device.
+		Assumes IE is installed on the Windows device.
+	Parameters:
+		n/a	 
+	Returns: 
+		n/a
+**)
+to launchIE_Private
+	If DSKUtilities.windowsLoginCheck equals true 
+		log "Opening Internet Explorer in private mode."
+		DSKUtilities.killTask "iexplore.exe"
+		DSKUtilities.launchTask "iexplore.exe -private"
+		If  ImageFound(imageName: "DSKBrowser/Icon_IE_InPrivate", WaitFor: 10 seconds) or if ImageFound(text: "InPrivate Browsing", WaitFor: 10 seconds)
+			log "Internet Explorer has been opened in Private mode"
+		else
+			throw Name:"DSKBrowser.launchIE_Private", reason: "Unable to confirm a IE Private Mode was opened"
+		end if	
+	else	
+		throw Name:"DSKBrowser.launchIE_Private", reason: "Unable to confirm user is logged into Windows device"
+	end if
+end launchIE_Private	
+
+(**
+	Handler: 
+		DSKBrowser.launchIE_PrivateMaxURL (URL)
+	Description: 
+		Launch Internet Explorer (Private mode), Enter URL, and maximize
+	Parameters: 
+		URL - address or url to navigate to
+	Returns: 
+		n/a
+**)
+to launchIE_PrivateMaxURL URL
+	DSKBrowser.launchIE_Private
+	log "Entering URL into IE"
+	DSKBrowser.selectAddressBar // Not always selected by default
+	wait 2 seconds // This hard wait is required to load the IE browser and the address bar is displayed
+	TypeText URL
+	wait 2 seconds // This hard wait is required to hold-on untill the URL is completely entered in the address bar.
+	TypeText returnkey
+	DSKBrowser.maximize
+end launchIE_PrivateMaxURL
+
+(**
+	Handler: 
+		DSKBrowser.launchEdgeMax_withURL url
+	Description: 
+		Launch Microsoft edge (non private), enter URL, and maximize
+	Parameters: 
+		URL - address or url to navigate to 
+	Returns: 
+		n/a
+**)
+to launchEdgeMax_withURL url  
+	If DSKUtilities.windowsLoginCheck equals true 
+		Log "Opening a clean window of Microsoft Edge"
+		DSKBrowser.closeAllEdgeTabs
+		DSKUtilities.launchTask "cmd"
+		Waitfor 15 seconds, image: "DSKWindows/Logo_CommandPrompt"// wait for command prompt to open
+		Typetext "start microsoft-edge:" & url
+		Typetext returnKey	
+		If ImageFound(image: "DSKBrowser/Button_Refresh/Microsoft_Edge", WaitFor: 30 seconds)
+			log "Microsoft Edge has been opened"
+			DSKBrowser.maximize
+		else
+			throw Name:"DSKBrowser.launchEdgeMax_withURL", reason: "Unable to confirm Microsoft Edge has opened"
+		end if	
+		DSKUtilities.killTask ("cmd.exe")
+	else
+		throw Name: "DSKBrowser.launchEdgeMax_withURL", reason: "Unable to confirm user is logged into Windows device"
+	end if
+end launchEdgeMax_withURL
+
+(**
+	Handler: 
+		DSKBrowser.maximize
+	Description: 
+		Maximized Chrome or IE browsers in windows as needed. 
+	Parameters: 
+		n/a 
+	Returns: 
+		n/a
+**)
+to maximize
+	If ImageFound (imageName: "DSKBrowser/Button_Restore")	
+		log "Browser is maxmized"
+	else
+		DSKUtilities.maximizeWindow
+		WaitFor 15 seconds, (imageName: "DSKBrowser/Button_Restore")
+		log "Browser has been maximized"
+	End If
+end maximize
+
+(**
+	Handler: 
+		DSKBrowser.openTabURLInChrome (URL)
+	Description: 
+		Assumes chrome is already open.  Will open a new tab in chrome and navigate to URL provided
+	Parameters: 
+		URL - address or url to navigate to
+	Returns: 
+		n/a
+**)
+to openTabURLInChrome URL
+	LogWarning "The DSKBrowser.openTabURLInChrome  will be deprecated in the IPDEV-Desktop-Shared 1.0.0 release.  Please update test to use DSKBrowser.openTabEnterURL"
+	set searchArea to DSKUtilities.scale (0, 0, 1, .1) // Top 10% of screen for tab bar
+	log "Navigating to" && URL && "using a new chrome tab"
+	DSKBrowser.openNewTab
+	If ImageFound(text: "New Tab", Wait: 5 seconds, SearchRectangle: searchArea) 
+		TypeText URL
+		TypeText returnkey
+	else
+		throw Name:"DSKBrowser.openTabURLInChrome", reason: "Unable to confirm a new browser tab was opened"
+	end if	
+end openTabURLInChrome
+
+(**
+	Handler: 
+		DSKBrowser.openTabEnterURL (URL)
+	Description: 
+		Assumes Browser is already open.  Will open new tab and enter URL		
+	Parameters: 
+		URL - address or url to navigate to	 
+	Returns: 
+		n/a
+**)
+to openTabEnterURL URL
+	set searchArea to DSKUtilities.scale (0, 0, 1, .1) // Top 10% of screen for tab bar
+	log "Navigating to" && URL && "using a new browser tab"
+	DSKBrowser.openNewTab
+	If ImageFound(text: "New Tab", Wait: 5 seconds, SearchRectangle: searchArea) or if ImageFound(text:"InPrivate", Wait: 5 seconds, SearchRectangle: searchArea)
+		TypeText URL
+		TypeText returnkey
+	else
+		throw Name:"DSKBrowser.openTabEnterURL", reason: "Unable to confirm a new browser tab was opened"
+	end if
+end openTabEnterURL
+
+(**
+	Handler: 
+		DSKBrowser.selectAddressandEnterURL (URL)
+	Description: 
+		 Selects address bar in browser and navigates to a new URL
+	Parameters: 
+		URL - address or url to navigate to
+	Returns: 
+		n/a
+**)
+To selectAddressandEnterURL URL
+	log "Navigating to" && URL && "using a existing open tab"
+	DSKBrowser.selectAddressBar
+	TypeText URL
+	TypeText returnkey
+end selectAddressandEnterURL
+
+(**
+	Handler: 
+		DSKBrowser.selectAddressBar
+	Description: 
+		Assumes Browser is already open.  Will select the address bar
+	Parameters: 
+		n/a 
+	Returns: 
+		n/a
+**)
+to selectAddressBar
+	KeyDown controlKey
+	Typetext "l"
+	KeyUp controlKey
+	wait 3 //  no visual cue beside hightlighted text you are ready
+end selectAddressBar
+
+(**
+	Handler: 
+		DSKBrowser.openNewTab
+	Description: 
+		Assumes Browser is already open.  Will open a new tab in browser
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to openNewTab
+	KeyDown controlKey
+	Typetext "t"
+	KeyUp controlKey
+end openNewTab
+
+(**
+	Handler: 
+		DSKBrowser.back
+	Description: 
+		Assumes Browser is already open.  Will go back to previous URL
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to back
+	KeyDown altKey
+	Typetext LeftArrow
+	KeyUp altKey
+end back
+
+(**
+	Handler: 
+		DSKBrowser.forward
+	Description: 
+		Assumes Browser is already open.  Will go back to previous URL
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to forward
+	KeyDown altKey
+	Typetext rightArrow
+	KeyUp altKey
+end forward
+
+(**
+	Handler: 
+		DSKBrowser.refresh
+	
+	Description: 
+		Assumes Browser is already open.  Refresh current page
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+**)
+to refresh
+	typetext F5
+end refresh
+
+(*
+	Handler:
+		DSKBrowser.selectLastIEtabFromToolbar
+	Description:
+		Select IE icon in toolbar and select the last tab (if more than one) to make actice window
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+*)
+to selectLastIEtabFromToolbar
+	log "Switching to last used tab in Internet Explorer"
+	set toolBarArea to DSKUtilities.scale (.01, .95, 1, 1) 
+	click (image :"DSKBrowser/Icon_IE_Toolbar", SearchRectangle: toolBarArea)
+	typetext upArrow, returnKey
+end selectLastIEtabFromToolbar
+
+(*
+	Handler:
+		DSKBrowser.copyCurrentURL
+	Description:
+		selects the current url and copies it to local keyboard
+		Note - RemoteClipboard() does not work with device outside of windows so unable to return this value
+	Parameters: 
+		n/a
+	Returns: 
+		n/a
+*)
+to copyCurrentURL
+	DSKBrowser.selectAddressBar
+	typetext controlKey, "c" 
+end copyCurrentURL
+
+(**
+	Handler: 
+		DSKBrowser.chromeRefreshImage
+	Description: 
+		Return the chrome incognito refresh image
+	Parameters: 
+		n/a
+	Returns:
+		image - chrome incognito refresh
+**)
+to chromeRefreshImage
+	return "DSKBrowser/Button_Refresh/Chrome_Incognito"
+end chromeRefreshImage
+
+(**
+	Handler: 
+		DSKBrowser.closeAllEdgeTabs
+	Description: 
+		Closes all opened tabs on edge browser. 
+	Parameters: 
+		n/a
+	Returns:
+		n/a
+**)
+to closeAllEdgeTabs
+	Log "Closing all edge browser tabs if any"
+	DSKUtilities.launchTask "cmd"
+	Waitfor 15 seconds, image: "DSKWindows/Logo_CommandPrompt"// wait for command prompt to open
+	Typetext "start microsoft-edge:" // gives edge focus
+	TypeText returnKey
+	Waitfor 5second, image: "DSKBrowser/Button_Refresh/Microsoft_Edge"
+	typetext altKey, f4
+	If imagefound(text: "Close All", SearchRectangle: DSKUtilities.scale (.25, .25, .75, .75))
+		click (text:"Always")
+		click third item of EveryImageLocation(text:"Close all")
+	end if	
+	DSKUtilities.killTask ("cmd.exe")
+end closeAllEdgeTabs	
